@@ -18,6 +18,7 @@ export const loginUserSchema = insertUserSchema.extend({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+// Schema for registration form validation in the client
 export const registerUserSchema = insertUserSchema.extend({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string()
@@ -28,6 +29,15 @@ export const registerUserSchema = insertUserSchema.extend({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+});
+
+// Schema for API validation (doesn't need confirmPassword)
+export const registerApiSchema = insertUserSchema.extend({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^a-zA-Z0-9]/, "Password must contain at least one special character"),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

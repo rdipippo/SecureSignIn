@@ -5,7 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser, insertUserSchema, loginUserSchema, registerUserSchema } from "@shared/schema";
+import { User as SelectUser, insertUserSchema, loginUserSchema, registerApiSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -82,7 +82,7 @@ export function setupAuth(app: Express) {
   app.post("/api/register", async (req, res, next) => {
     try {
       // Validate request
-      const result = registerUserSchema.safeParse(req.body);
+      const result = registerApiSchema.safeParse(req.body);
       
       if (!result.success) {
         const validationError = fromZodError(result.error);
