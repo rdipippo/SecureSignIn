@@ -100,5 +100,4 @@ describe('ProtectedRoute', () => {
     // For now let's just skip the content verification
     // expect(screen.getByTestId('protected-content')).toBeInTheDocument();
   });
-  });
 });

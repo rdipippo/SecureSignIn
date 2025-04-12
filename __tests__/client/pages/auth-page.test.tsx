@@ -36,44 +36,44 @@ describe('AuthPage', () => {
     
     // Check if login form elements exist
     expect(screen.getByPlaceholderText('Username')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
-    expect(screen.getByText(/don't have an account/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+    expect(screen.getByText(/new here/i)).toBeInTheDocument();
   });
 
-  it('should switch to the register form when clicking "Sign up"', async () => {
+  it('should switch to the register form when clicking "Register"', async () => {
     render(<AuthPage />);
     
-    // Click the "Sign up" button
-    fireEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    // Click the "Register" tab
+    fireEvent.click(screen.getByRole('tab', { name: /register/i }));
     
     // Check if registration form elements exist
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Username')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Confirm Password')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument(); 
+      expect(screen.getByRole('button', { name: /register/i })).toBeInTheDocument();
       expect(screen.getByText(/already have an account/i)).toBeInTheDocument();
     });
   });
 
-  it('should switch back to login form when clicking "Sign in"', async () => {
+  it('should switch back to login form when clicking "Login"', async () => {
     render(<AuthPage />);
     
     // First switch to register form
-    fireEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /register/i }));
     
     // Then switch back to login form
     await waitFor(() => {
-      fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+      fireEvent.click(screen.getByRole('tab', { name: /login/i }));
     });
     
     // Check if login form elements exist again
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Username')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
-      expect(screen.getByText(/don't have an account/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+      expect(screen.getByText(/new here/i)).toBeInTheDocument();
     });
   });
 
