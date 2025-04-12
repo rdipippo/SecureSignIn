@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '../../mocks/test-utils';
 import AuthPage from '@/pages/auth-page';
 import { mockRegisterUser } from '../../mocks/data';
+import React from 'react';
 
 // Mock the useAuth hook
 vi.mock('@/hooks/use-auth', () => ({
@@ -19,6 +20,7 @@ vi.mock('@/hooks/use-auth', () => ({
       error: null,
     }
   })),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 // Mock wouter's useLocation

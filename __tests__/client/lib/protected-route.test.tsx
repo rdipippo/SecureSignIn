@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '../../mocks/test-utils';
 import { ProtectedRoute } from '@/lib/protected-route';
 import { mockUsers } from '../../mocks/data';
+import React from 'react';
 
 // Mock the useAuth hook
 vi.mock('@/hooks/use-auth', () => ({
@@ -9,6 +10,7 @@ vi.mock('@/hooks/use-auth', () => ({
     user: null,
     isLoading: false,
   })),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 // Mock the wouter package
