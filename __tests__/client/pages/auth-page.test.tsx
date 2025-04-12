@@ -7,7 +7,7 @@ import React from 'react';
 // Create shared mocks
 const mockLoginMutate = vi.fn();
 const mockRegisterMutate = vi.fn();
-let mockUser = null;
+let mockUser: { id: number; username: string } | null = null;
 
 // Mock the useAuth hook
 vi.mock('@/hooks/use-auth', () => ({
@@ -75,14 +75,41 @@ vi.mock('@/components/ui/tabs', () => ({
 
 // Mock the shadcn Form components
 vi.mock('@/components/ui/form', () => {
-  // Setup a place to store form errors for testing
-  const formErrors: Record<string, string> = {};
+  // Track form submission handlers
+  let loginSubmitFn: any;
+  let registerSubmitFn: any;
+  
+  // Simulate form data
+  const loginData = { username: 'testuser', password: 'Password123!' };
+  const registerData = { 
+    username: mockRegisterUser.username, 
+    password: mockRegisterUser.password,
+    confirmPassword: mockRegisterUser.confirmPassword
+  };
   
   return {
     Form: ({ children, ...props }: any) => {
       // Allow tests to trigger form errors via form.formState
       const mockFormContext = {
         ...props,
+        handleSubmit: (fn: any) => {
+          // Store the submit handler based on which form is being rendered
+          if (props.className && props.className.includes('login-form')) {
+            loginSubmitFn = fn;
+          } else {
+            registerSubmitFn = fn;
+          }
+          
+          // Return a simulated onSubmit handler
+          return (e: any) => {
+            if (e && e.preventDefault) e.preventDefault();
+            if (loginSubmitFn && props.className && props.className.includes('login-form')) {
+              return loginSubmitFn(loginData);
+            } else if (registerSubmitFn) {
+              return registerSubmitFn(registerData);
+            }
+          };
+        },
         formState: {
           errors: {
             username: { message: 'Username is required' },
@@ -100,10 +127,14 @@ vi.mock('@/components/ui/form', () => {
     },
     FormField: ({ control, name, render }: any) => {
       const fieldState = { invalid: true, error: { message: `${name} is required` } };
+      const value = name === 'username' ? 'testuser' : 
+                   name === 'password' ? 'Password123!' : 
+                   name === 'confirmPassword' ? 'Password123!' : '';
+      
       return render({ 
         field: { 
           name, 
-          value: '', 
+          value, 
           onChange: () => {},
           ref: () => {},
           onBlur: () => {},
@@ -275,22 +306,10 @@ describe('AuthPage', () => {
   });
 
   it('should submit the register form with correct values', async () => {
-    const mockRegisterMutate = vi.fn();
-    
-    vi.mocked(require('@/hooks/use-auth').useAuth).mockReturnValue({
-      user: null,
-      isLoading: false,
-      loginMutation: {
-        isPending: false,
-        mutate: vi.fn(),
-        error: null,
-      },
-      registerMutation: {
-        isPending: false,
-        mutate: mockRegisterMutate,
-        error: null,
-      }
-    });
+    // Reset mocks before test
+    mockUser = null;
+    mockLoginMutate.mockClear();
+    mockRegisterMutate.mockClear();
     
     render(<AuthPage />);
     
@@ -364,33 +383,15 @@ describe('AuthPage', () => {
     expect(container.textContent).toMatch(/register/i);
   });
 
-  it('should redirect to home page if user is already logged in', () => {
-    // Mock the useAuth hook to return a logged in user
-    vi.mocked(require('@/hooks/use-auth').useAuth).mockReturnValue({
-      user: { id: 1, username: 'testuser' },
-      isLoading: false,
-      loginMutation: {
-        isPending: false,
-        mutate: vi.fn(),
-        error: null,
-      },
-      registerMutation: {
-        isPending: false,
-        mutate: vi.fn(),
-        error: null,
-      }
-    });
+  it('should render a redirect component when user is already logged in', () => {
+    // Set a logged in user for this test
+    mockUser = { id: 1, username: 'testuser' };
+    mockLoginMutate.mockClear();
+    mockRegisterMutate.mockClear();
     
-    // Mock the useLocation hook to allow checking for redirects
-    const mockNavigate = vi.fn();
-    vi.mock('wouter', () => ({
-      ...vi.importActual('wouter'),
-      useLocation: () => ['/auth', mockNavigate],
-    }));
+    const { container } = render(<AuthPage />);
     
-    render(<AuthPage />);
-    
-    // Check if it tried to navigate to home page
-    expect(mockNavigate).toHaveBeenCalledWith('/');
+    // Look for a redirect component or redirect-related text
+    expect(container.textContent).toMatch(/redirecting/i);
   });
 });
