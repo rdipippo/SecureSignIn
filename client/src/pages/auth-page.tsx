@@ -251,6 +251,7 @@ function RegisterForm({ isPending, onSubmit, error, onLoginClick }: RegisterForm
     resolver: zodResolver(registerUserSchema),
     defaultValues: {
       username: "",
+      email: "",
       password: "",
       confirmPassword: "",
     },
@@ -280,6 +281,25 @@ function RegisterForm({ isPending, onSubmit, error, onLoginClick }: RegisterForm
                   <FormControl>
                     <Input 
                       placeholder="Username" 
+                      {...field} 
+                      disabled={isPending}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="email"
+                      placeholder="you@example.com" 
                       {...field} 
                       disabled={isPending}
                     />
