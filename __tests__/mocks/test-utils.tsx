@@ -1,14 +1,12 @@
-import React, { ReactElement } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
+import { cleanup, render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { afterEach } from 'vitest';
 import { AuthProvider } from '@/hooks/use-auth';
+import React, { ReactElement } from 'react';
 
-// Create a custom render function that includes providers
-const customRender = (
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>,
-) => {
-  const queryClient = new QueryClient({
+// Create a fresh query client for each test
+const createTestQueryClient = () =>
+  new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
@@ -16,19 +14,26 @@ const customRender = (
     },
   });
 
-  const Wrapper = ({ children }: { children: React.ReactNode }) => {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>{children}</AuthProvider>
-      </QueryClientProvider>
-    );
-  };
-
+// Create a custom render function that wraps the component with necessary providers
+const customRender = (
+  ui: ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>,
+) => {
+  const testQueryClient = createTestQueryClient();
+  
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={testQueryClient}>
+      <AuthProvider>{children}</AuthProvider>
+    </QueryClientProvider>
+  );
+  
   return render(ui, { wrapper: Wrapper, ...options });
 };
 
-// Re-export everything from testing-library
-export * from '@testing-library/react';
+// Clean up after each test
+afterEach(() => {
+  cleanup();
+});
 
-// Override the render method
+export * from '@testing-library/react';
 export { customRender as render };

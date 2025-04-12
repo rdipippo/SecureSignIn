@@ -1,15 +1,15 @@
-import { User, InsertUser, LoginUser } from '@shared/schema';
+import { InsertUser, LoginUser, User } from '@shared/schema';
 
 export const mockUsers: User[] = [
   {
     id: 1,
     username: 'testuser1',
-    password: 'hashed_password_1',
+    password: 'hashedPassword1.salt',
   },
   {
     id: 2,
     username: 'testuser2',
-    password: 'hashed_password_2',
+    password: 'hashedPassword2.salt',
   },
 ];
 
@@ -24,8 +24,8 @@ export const mockLoginUser: LoginUser = {
 };
 
 export const mockInvalidLoginUser: LoginUser = {
-  username: 'nonexistent',
-  password: 'wrongpassword',
+  username: 'nonexistentuser',
+  password: 'invalidpassword',
 };
 
 export const mockRegisterUser = {
@@ -35,7 +35,7 @@ export const mockRegisterUser = {
 };
 
 export const mockInvalidRegisterUser = {
-  username: 'u',  // Too short
-  password: 'short',  // No special chars or numbers
-  confirmPassword: 'different',  // Doesn't match
+  username: 'nu',
+  password: 'weak',
+  confirmPassword: 'doesntmatch',
 };

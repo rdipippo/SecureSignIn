@@ -1,50 +1,67 @@
 import { http, HttpResponse } from 'msw';
-import { mockUsers } from './data';
+import { mockUsers, mockInsertUser, mockLoginUser, mockInvalidLoginUser } from './data';
 
-// Create mock handlers for API endpoints
+// Track authentication status
+let isAuthenticated = false;
+
 export const handlers = [
-  // Get current user
+  // GET /api/user - Return user if authenticated
   http.get('/api/user', () => {
-    // Return the first user without the password
-    const { password, ...user } = mockUsers[0];
-    return HttpResponse.json(user);
+    if (isAuthenticated) {
+      return HttpResponse.json(mockUsers[0], { status: 200 });
+    }
+    
+    return new HttpResponse(null, { status: 401 });
   }),
-
-  // Login
+  
+  // POST /api/login - Authenticate a user
   http.post('/api/login', async ({ request }) => {
     const data = await request.json();
+    const { username, password } = data as any;
     
-    const user = mockUsers.find(u => u.username === data.username);
-    if (!user) {
-      return new HttpResponse(null, { status: 401 });
+    // Check if the credentials match a mock user
+    const user = mockUsers.find(u => u.username === username);
+    
+    if (user) {
+      // Set mock authenticated state
+      isAuthenticated = true;
+      
+      return HttpResponse.json(user, { status: 200 });
     }
     
-    // In a real test, we would verify the password here
-    const { password, ...safeUser } = user;
-    return HttpResponse.json(safeUser);
+    return HttpResponse.json({ message: 'Invalid credentials' }, { status: 401 });
   }),
-
-  // Register
+  
+  // POST /api/register - Register a new user
   http.post('/api/register', async ({ request }) => {
     const data = await request.json();
+    const { username } = data as any;
     
-    // Check if username exists
-    const existingUser = mockUsers.find(u => u.username === data.username);
+    // Check if username already exists
+    const existingUser = mockUsers.find(u => u.username === username);
+    
     if (existingUser) {
-      return new HttpResponse(JSON.stringify({ message: 'Username already exists' }), {
-        status: 400,
-      });
+      return HttpResponse.text('Username already exists', { status: 400 });
     }
     
-    // Return a new user
-    return HttpResponse.json({
+    // Create a new user
+    const newUser = {
+      ...mockInsertUser,
       id: mockUsers.length + 1,
-      username: data.username,
-    }, { status: 201 });
+      username,
+    };
+    
+    // Set mock authenticated state
+    isAuthenticated = true;
+    
+    return HttpResponse.json(newUser, { status: 201 });
   }),
-
-  // Logout
+  
+  // POST /api/logout - Log out a user
   http.post('/api/logout', () => {
+    // Clear mock authenticated state
+    isAuthenticated = false;
+    
     return new HttpResponse(null, { status: 200 });
   }),
 ];
