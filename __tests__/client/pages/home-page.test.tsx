@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '../../mocks/test-utils';
 import HomePage from '@/pages/home-page';
 import { mockUsers } from '../../mocks/data';
+import React from 'react';
 
 // Mock the useAuth hook
 vi.mock('@/hooks/use-auth', () => ({
@@ -13,6 +14,7 @@ vi.mock('@/hooks/use-auth', () => ({
       mutate: vi.fn(),
     },
   })),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 // Mock wouter for navigation

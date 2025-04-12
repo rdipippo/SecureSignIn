@@ -28,7 +28,10 @@ describe('ProtectedRoute', () => {
       user: null,
       isLoading: true,
     }));
-    vi.doMock('@/hooks/use-auth', () => ({ useAuth }));
+    vi.doMock('@/hooks/use-auth', () => ({ 
+      useAuth,
+      AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    }));
 
     render(<ProtectedRoute path="/protected" component={MockComponent} />);
     

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '../../mocks/test-utils';
 import NotFound from '@/pages/not-found';
+import React from 'react';
 
 // Mock wouter for Link component
 vi.mock('wouter', () => ({
