@@ -91,17 +91,24 @@ export function setupAuth(app: Express) {
         });
       }
       
-      const { username, password } = result.data;
+      const { username, email, password } = result.data;
 
       // Check if username already exists
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
+      
+      // Check if email already exists
+      const existingEmail = await storage.getUserByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
 
       // Create user with hashed password
       const user = await storage.createUser({
         username,
+        email,
         password: await hashPassword(password),
       });
 
