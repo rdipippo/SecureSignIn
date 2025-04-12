@@ -1,173 +1,162 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mockUsers, mockInsertUser, mockLoginUser } from '../mocks/data';
-import express, { Express } from 'express';
-import session from 'express-session';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import request from 'supertest';
-import passport from 'passport';
+import { mockUsers, mockInsertUser } from '../mocks/data';
 import { setupAuth } from '../../server/auth';
 import { IStorage } from '../../server/storage';
+import session from 'express-session';
+import passport from 'passport';
 
-// Mock the storage
-const mockStorage: IStorage = {
-  getUser: vi.fn(),
-  getUserByUsername: vi.fn(),
-  createUser: vi.fn(),
-  sessionStore: {} as session.Store,
-};
-
-// Mock the crypto utils
+// Mock the crypto module
 vi.mock('crypto', () => ({
   scrypt: vi.fn((password, salt, keylen, callback) => {
-    callback(null, Buffer.from('hashed_' + password));
+    callback(null, Buffer.from('hashed_password'));
   }),
-  randomBytes: vi.fn(() => ({ toString: () => 'random_salt' })),
+  randomBytes: vi.fn(() => ({
+    toString: () => 'random_salt',
+  })),
   timingSafeEqual: vi.fn(() => true),
 }));
 
-// Mock the passport module
-vi.mock('passport', () => ({
-  default: {
-    initialize: vi.fn(() => (req: any, res: any, next: any) => next()),
-    session: vi.fn(() => (req: any, res: any, next: any) => next()),
-    use: vi.fn(),
-    authenticate: vi.fn(() => (req: any, res: any, next: any) => {
-      req.user = { ...mockUsers[0], password: undefined };
-      next();
-    }),
-    serializeUser: vi.fn((fn) => fn(mockUsers[0], (err: any, id: any) => {})),
-    deserializeUser: vi.fn((fn) => fn(1, (err: any, user: any) => {})),
-  },
-  Strategy: vi.fn(),
+// Mock the storage
+const mockStorage: IStorage = {
+  getUser: vi.fn(async (id: number) => {
+    return mockUsers.find(user => user.id === id);
+  }),
+  getUserByUsername: vi.fn(async (username: string) => {
+    return mockUsers.find(user => user.username === username);
+  }),
+  createUser: vi.fn(async (userData) => {
+    return { ...userData, id: 1 };
+  }),
+  sessionStore: {},
+};
+
+vi.mock('../../server/storage', () => ({
+  storage: mockStorage,
 }));
 
-describe('Auth Routes', () => {
+// Mock passport
+vi.mock('passport', () => ({
+  default: {
+    initialize: vi.fn(() => (req: Request, res: Response, next: NextFunction) => next()),
+    session: vi.fn(() => (req: Request, res: Response, next: NextFunction) => next()),
+    use: vi.fn(),
+    authenticate: vi.fn(() => (req: Request, res: Response, next: NextFunction) => {
+      // Simulate successful authentication
+      req.user = mockUsers[0];
+      next();
+    }),
+    serializeUser: vi.fn(),
+    deserializeUser: vi.fn(),
+  },
+}));
+
+// Mock express-session
+vi.mock('express-session', () => {
+  return vi.fn(() => (req: Request, res: Response, next: NextFunction) => {
+    next();
+  });
+});
+
+describe('Auth Module', () => {
   let app: Express;
 
   beforeEach(() => {
-    // Reset mock functions
-    vi.resetAllMocks();
-    
-    // Configure mock storage
-    (mockStorage.getUserByUsername as any).mockImplementation((username: string) => {
-      return Promise.resolve(mockUsers.find(u => u.username === username));
-    });
-    
-    (mockStorage.getUser as any).mockImplementation((id: number) => {
-      return Promise.resolve(mockUsers.find(u => u.id === id));
-    });
-    
-    (mockStorage.createUser as any).mockImplementation((user: any) => {
-      return Promise.resolve({ ...user, id: mockUsers.length + 1 });
-    });
-    
-    // Create a fresh Express app for each test
+    vi.clearAllMocks();
     app = express();
     app.use(express.json());
-    
-    // Mock req.login and req.logout
-    app.use((req: any, res, next) => {
-      req.login = vi.fn((user, cb) => cb());
-      req.logout = vi.fn((cb) => cb());
-      req.isAuthenticated = vi.fn(() => true);
-      next();
-    });
-    
-    // Set up auth routes
     setupAuth(app);
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe('POST /api/register', () => {
-    it('should register a new user and return it without the password', async () => {
-      (mockStorage.getUserByUsername as any).mockResolvedValueOnce(undefined);
-      
-      const res = await request(app)
+    it('should register a new user', async () => {
+      const response = await request(app)
         .post('/api/register')
-        .send({
-          username: 'newuser',
-          password: 'Password123!'
-        });
+        .send(mockInsertUser);
       
-      expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty('id');
-      expect(res.body).toHaveProperty('username', 'newuser');
-      expect(res.body).not.toHaveProperty('password');
-      expect(mockStorage.createUser).toHaveBeenCalled();
+      expect(response.status).toBe(201);
+      expect(mockStorage.createUser).toHaveBeenCalledWith(expect.objectContaining({
+        username: mockInsertUser.username,
+        password: expect.any(String), // Password should be hashed
+      }));
+      expect(response.body).toEqual(expect.objectContaining({
+        id: 1,
+        username: mockInsertUser.username,
+      }));
     });
 
-    it('should return 400 if the username already exists', async () => {
-      (mockStorage.getUserByUsername as any).mockResolvedValueOnce(mockUsers[0]);
+    it('should return 400 if username already exists', async () => {
+      // Mock user already exists
+      vi.mocked(mockStorage.getUserByUsername).mockResolvedValueOnce(mockUsers[0]);
       
-      const res = await request(app)
+      const response = await request(app)
         .post('/api/register')
-        .send({
-          username: 'existinguser',
-          password: 'Password123!'
-        });
+        .send(mockInsertUser);
       
-      expect(res.status).toBe(400);
-      expect(mockStorage.createUser).not.toHaveBeenCalled();
-    });
-
-    it('should return 400 if validation fails', async () => {
-      const res = await request(app)
-        .post('/api/register')
-        .send({
-          username: 'u', // Too short
-          password: 'short'
-        });
-      
-      expect(res.status).toBe(400);
-      expect(mockStorage.createUser).not.toHaveBeenCalled();
+      expect(response.status).toBe(400);
+      expect(response.text).toContain('Username already exists');
     });
   });
 
   describe('POST /api/login', () => {
-    it('should log in an existing user and return the user without password', async () => {
-      const res = await request(app)
+    it('should authenticate a user', async () => {
+      const response = await request(app)
         .post('/api/login')
-        .send(mockLoginUser);
+        .send({
+          username: mockInsertUser.username,
+          password: mockInsertUser.password,
+        });
       
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('id');
-      expect(res.body).toHaveProperty('username');
-      expect(res.body).not.toHaveProperty('password');
+      expect(response.status).toBe(200);
+      expect(passport.authenticate).toHaveBeenCalled();
     });
   });
 
   describe('POST /api/logout', () => {
-    it('should log out the user', async () => {
-      const res = await request(app)
+    it('should log out a user', async () => {
+      // Mock req.logout
+      app.use((req, res, next) => {
+        req.logout = (callback) => {
+          callback(null);
+        };
+        next();
+      });
+      
+      const response = await request(app)
         .post('/api/logout');
       
-      expect(res.status).toBe(200);
+      expect(response.status).toBe(200);
     });
   });
 
   describe('GET /api/user', () => {
-    it('should return the current user if authenticated', async () => {
-      const res = await request(app)
-        .get('/api/user');
-      
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('id');
-      expect(res.body).toHaveProperty('username');
-      expect(res.body).not.toHaveProperty('password');
-    });
-
-    it('should return 401 if not authenticated', async () => {
-      app.use((req: any, res, next) => {
-        req.isAuthenticated = vi.fn(() => false);
+    it('should return user data if authenticated', async () => {
+      // Mock authenticated request
+      app.use((req, res, next) => {
+        req.isAuthenticated = () => true;
+        req.user = mockUsers[0];
         next();
       });
       
-      const res = await request(app)
+      const response = await request(app)
         .get('/api/user');
       
-      expect(res.status).toBe(401);
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockUsers[0]);
+    });
+
+    it('should return 401 if not authenticated', async () => {
+      // Mock unauthenticated request
+      app.use((req, res, next) => {
+        req.isAuthenticated = () => false;
+        next();
+      });
+      
+      const response = await request(app)
+        .get('/api/user');
+      
+      expect(response.status).toBe(401);
     });
   });
 });

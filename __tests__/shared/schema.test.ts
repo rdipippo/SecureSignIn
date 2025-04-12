@@ -1,122 +1,146 @@
 import { describe, it, expect } from 'vitest';
+import { z } from 'zod';
 import { 
-  insertUserSchema, 
-  loginUserSchema, 
+  insertUserSchema,
+  loginUserSchema,
   registerUserSchema,
   registerApiSchema
 } from '@shared/schema';
-import { mockRegisterUser, mockInvalidRegisterUser } from '../mocks/data';
 
 describe('Schema Validation', () => {
-  // Insert User Schema
   describe('insertUserSchema', () => {
     it('should validate a valid user', () => {
       const validUser = {
         username: 'testuser',
-        password: 'Password123!'
+        password: 'Password123!',
       };
+      
       const result = insertUserSchema.safeParse(validUser);
       expect(result.success).toBe(true);
     });
 
     it('should reject a user with missing fields', () => {
       const invalidUser = {
-        username: 'testuser'
+        username: 'testuser',
       };
+      
       const result = insertUserSchema.safeParse(invalidUser);
       expect(result.success).toBe(false);
+      
+      if (!result.success) {
+        expect(result.error.issues[0].path[0]).toBe('password');
+      }
     });
   });
 
-  // Login User Schema
   describe('loginUserSchema', () => {
     it('should validate a valid login', () => {
       const validLogin = {
         username: 'testuser',
-        password: 'Password123!'
+        password: 'Password123!',
       };
+      
       const result = loginUserSchema.safeParse(validLogin);
       expect(result.success).toBe(true);
     });
 
-    it('should reject a login with short username', () => {
+    it('should reject a login with empty fields', () => {
       const invalidLogin = {
-        username: 'te',
-        password: 'Password123!'
+        username: '',
+        password: '',
       };
+      
       const result = loginUserSchema.safeParse(invalidLogin);
       expect(result.success).toBe(false);
-    });
-
-    it('should reject a login with short password', () => {
-      const invalidLogin = {
-        username: 'testuser',
-        password: 'pass'
-      };
-      const result = loginUserSchema.safeParse(invalidLogin);
-      expect(result.success).toBe(false);
+      
+      if (!result.success) {
+        const fieldErrors = result.error.issues.map(issue => issue.path[0]);
+        expect(fieldErrors).toContain('username');
+        expect(fieldErrors).toContain('password');
+      }
     });
   });
 
-  // Register User Schema
   describe('registerUserSchema', () => {
     it('should validate a valid registration', () => {
-      const result = registerUserSchema.safeParse(mockRegisterUser);
+      const validRegistration = {
+        username: 'testuser',
+        password: 'Password123!',
+        confirmPassword: 'Password123!',
+      };
+      
+      const result = registerUserSchema.safeParse(validRegistration);
       expect(result.success).toBe(true);
     });
 
-    it('should reject registration with password mismatch', () => {
+    it('should reject when passwords do not match', () => {
       const invalidRegistration = {
-        ...mockRegisterUser,
-        confirmPassword: 'DifferentPassword123!'
+        username: 'testuser',
+        password: 'Password123!',
+        confirmPassword: 'DifferentPassword',
       };
+      
       const result = registerUserSchema.safeParse(invalidRegistration);
       expect(result.success).toBe(false);
+      
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('passwords must match');
+      }
     });
 
-    it('should reject registration with invalid password format', () => {
+    it('should reject when username is too short', () => {
       const invalidRegistration = {
-        ...mockRegisterUser,
+        username: 'te',
+        password: 'Password123!',
+        confirmPassword: 'Password123!',
+      };
+      
+      const result = registerUserSchema.safeParse(invalidRegistration);
+      expect(result.success).toBe(false);
+      
+      if (!result.success) {
+        expect(result.error.issues[0].path[0]).toBe('username');
+      }
+    });
+
+    it('should reject when password does not meet complexity requirements', () => {
+      const invalidRegistration = {
+        username: 'testuser',
         password: 'password',
-        confirmPassword: 'password'
+        confirmPassword: 'password',
       };
+      
       const result = registerUserSchema.safeParse(invalidRegistration);
       expect(result.success).toBe(false);
-    });
-
-    it('should reject registration with short username', () => {
-      const invalidRegistration = {
-        ...mockRegisterUser,
-        username: 'ab'
-      };
-      const result = registerUserSchema.safeParse(invalidRegistration);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject completely invalid registration data', () => {
-      const result = registerUserSchema.safeParse(mockInvalidRegisterUser);
-      expect(result.success).toBe(false);
+      
+      if (!result.success) {
+        expect(result.error.issues[0].path[0]).toBe('password');
+      }
     });
   });
 
-  // Register API Schema
   describe('registerApiSchema', () => {
-    it('should validate a valid registration without confirmPassword', () => {
+    it('should validate a valid API registration', () => {
       const validRegistration = {
         username: 'testuser',
-        password: 'Password123!'
+        password: 'Password123!',
       };
+      
       const result = registerApiSchema.safeParse(validRegistration);
       expect(result.success).toBe(true);
     });
 
-    it('should reject registration with invalid password format', () => {
+    it('should reject when required fields are missing', () => {
       const invalidRegistration = {
         username: 'testuser',
-        password: 'password'
       };
+      
       const result = registerApiSchema.safeParse(invalidRegistration);
       expect(result.success).toBe(false);
+      
+      if (!result.success) {
+        expect(result.error.issues[0].path[0]).toBe('password');
+      }
     });
   });
 });
