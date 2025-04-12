@@ -5,11 +5,13 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
+  email: true,
   password: true,
 });
 
@@ -21,6 +23,7 @@ export const loginUserSchema = insertUserSchema.extend({
 // Schema for registration form validation in the client
 export const registerUserSchema = insertUserSchema.extend({
   username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email address"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
     .regex(/[0-9]/, "Password must contain at least one number")
@@ -34,6 +37,7 @@ export const registerUserSchema = insertUserSchema.extend({
 // Schema for API validation (doesn't need confirmPassword)
 export const registerApiSchema = insertUserSchema.extend({
   username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email address"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
     .regex(/[0-9]/, "Password must contain at least one number")
