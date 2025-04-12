@@ -16,6 +16,14 @@ vi.mock('@/lib/queryClient', () => {
   };
 });
 
+// Mock the toast hook
+const mockToast = vi.fn();
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({
+    toast: mockToast,
+  }),
+}));
+
 // Create a test wrapper component
 const TestComponent = () => {
   const { user, isLoading, loginMutation, logoutMutation, registerMutation } = useAuth();
@@ -157,14 +165,6 @@ describe('useAuth hook', () => {
     const { apiRequest } = await import('@/lib/queryClient');
     
     vi.mocked(apiRequest).mockRejectedValue(new Error('Invalid credentials'));
-    
-    // Spy on toast
-    const mockToast = vi.fn();
-    vi.mock('@/hooks/use-toast', () => ({
-      useToast: () => ({
-        toast: mockToast,
-      }),
-    }));
     
     // Render with hook
     render(
