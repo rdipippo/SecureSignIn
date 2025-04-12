@@ -84,7 +84,7 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(false);
       
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('passwords must match');
+        expect(result.error.issues[0].message).toContain("don't match");
       }
     });
 
