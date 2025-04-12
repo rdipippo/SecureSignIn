@@ -45,7 +45,10 @@ describe('ProtectedRoute', () => {
       user: null,
       isLoading: false,
     }));
-    vi.doMock('@/hooks/use-auth', () => ({ useAuth }));
+    vi.doMock('@/hooks/use-auth', () => ({ 
+      useAuth,
+      AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    }));
 
     render(<ProtectedRoute path="/protected" component={MockComponent} />);
     
@@ -59,7 +62,10 @@ describe('ProtectedRoute', () => {
       user: { id: 1, username: mockUsers[0].username },
       isLoading: false,
     }));
-    vi.doMock('@/hooks/use-auth', () => ({ useAuth }));
+    vi.doMock('@/hooks/use-auth', () => ({ 
+      useAuth,
+      AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    }));
 
     const { container } = render(<ProtectedRoute path="/protected" component={MockComponent} />);
     
