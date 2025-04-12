@@ -35,7 +35,7 @@ describe('HomePage', () => {
   it('should render a logout button', () => {
     render(<HomePage />);
     
-    expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
   });
 
   it('should call logout mutation when clicking the logout button', () => {
