@@ -29,7 +29,7 @@ export default function HomePage() {
                 onClick={() => logoutMutation.mutate()}
                 disabled={logoutMutation.isPending}
               >
-                Logout
+                {logoutMutation.isPending ? "Logging out..." : "Logout"}
               </Button>
             </div>
           </div>
