@@ -6,7 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, insertUserSchema, loginUserSchema, registerApiSchema } from "@shared/schema";
-import { ZodError } from "zod";
+import { ZodError, z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
 declare global {
@@ -129,8 +129,16 @@ export function setupAuth(app: Express) {
     try {
       console.log("Login request received:", req.body);
       
-      // Validate request
-      const result = loginUserSchema.safeParse(req.body);
+      // Since loginUserSchema includes email field but login only provides username and password,
+      // use a simpler schema for validation
+      console.log("Login request body:", req.body);
+      
+      const loginRequestSchema = z.object({
+        username: z.string().min(3, "Username must be at least 3 characters"),
+        password: z.string().min(8, "Password must be at least 8 characters"),
+      });
+      
+      const result = loginRequestSchema.safeParse(req.body);
       
       if (!result.success) {
         console.log("Login validation failed:", result.error);

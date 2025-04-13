@@ -164,8 +164,30 @@ function LoginForm({ isPending, onSubmit, error, onRegisterClick }: LoginFormPro
         <Form {...form}>
           <form 
             onSubmit={(e) => {
-              console.log("Form submitted");
-              form.handleSubmit(handleFormSubmit)(e);
+              console.log("Form submitted", form.getValues());
+              console.log("Form errors:", form.formState.errors);
+              e.preventDefault(); // Prevent default form submission
+              
+              // Manually validate and handle form
+              const formData = form.getValues();
+              // The loginUserSchema requires email field but our login form doesn't have it
+              // So we'll use a simplified schema for login validation
+              const loginFormSchema = z.object({
+                username: z.string().min(3, "Username must be at least 3 characters"),
+                password: z.string().min(8, "Password must be at least 8 characters"),
+              });
+              
+              const validationResult = loginFormSchema.safeParse(formData);
+              if (validationResult.success) {
+                console.log("Form validation passed, submitting to API");
+                // Add email property to match the required LoginUser type
+                onSubmit({
+                  ...validationResult.data,
+                  email: "" // this won't be used for login but satisfies the type
+                });
+              } else {
+                console.error("Form validation failed:", validationResult.error);
+              }
             }} 
             className="space-y-4"
           >
