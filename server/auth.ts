@@ -127,15 +127,20 @@ export function setupAuth(app: Express) {
 
   app.post("/api/login", (req, res, next) => {
     try {
+      console.log("Login request received:", req.body);
+      
       // Validate request
       const result = loginUserSchema.safeParse(req.body);
       
       if (!result.success) {
+        console.log("Login validation failed:", result.error);
         const validationError = fromZodError(result.error);
         return res.status(400).json({ 
           message: validationError.message
         });
       }
+      
+      console.log("Login validation successful")
       
       passport.authenticate("local", (err: Error, user: SelectUser | false, info: any) => {
         if (err) {

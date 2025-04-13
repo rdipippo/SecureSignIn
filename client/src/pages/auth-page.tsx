@@ -63,7 +63,10 @@ export default function AuthPage() {
             <TabsContent value="login">
               <LoginForm 
                 isPending={loginMutation.isPending} 
-                onSubmit={(data) => loginMutation.mutate(data)}
+                onSubmit={(data) => {
+                  console.log("Login form submitted", data);
+                  loginMutation.mutate(data);
+                }}
                 error={loginMutation.error?.message} 
                 onRegisterClick={() => setActiveTab("register")}
               />
@@ -134,6 +137,11 @@ function LoginForm({ isPending, onSubmit, error, onRegisterClick }: LoginFormPro
       password: "",
     },
   });
+  
+  const handleSubmit = (data: z.infer<typeof loginUserSchema>) => {
+    console.log("Form submitted in LoginForm", data);
+    onSubmit(data);
+  };
 
   return (
     <Card>
