@@ -138,9 +138,14 @@ function LoginForm({ isPending, onSubmit, error, onRegisterClick }: LoginFormPro
     },
   });
   
-  const handleSubmit = (data: z.infer<typeof loginUserSchema>) => {
-    console.log("Form submitted in LoginForm", data);
-    onSubmit(data);
+  // This function will get called when form is validated
+  const handleFormSubmit = (data: z.infer<typeof loginUserSchema>) => {
+    console.log("Login form submitted with valid data:", data);
+    try {
+      onSubmit(data);
+    } catch (err) {
+      console.error("Error submitting login form:", err);
+    }
   };
 
   return (
@@ -157,7 +162,13 @@ function LoginForm({ isPending, onSubmit, error, onRegisterClick }: LoginFormPro
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form 
+            onSubmit={(e) => {
+              console.log("Form submitted");
+              form.handleSubmit(handleFormSubmit)(e);
+            }} 
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="username"
@@ -264,6 +275,16 @@ function RegisterForm({ isPending, onSubmit, error, onLoginClick }: RegisterForm
       confirmPassword: "",
     },
   });
+  
+  // This function will get called when form is validated
+  const handleFormSubmit = (data: z.infer<typeof registerUserSchema>) => {
+    console.log("Register form submitted with valid data:", data);
+    try {
+      onSubmit(data);
+    } catch (err) {
+      console.error("Error submitting register form:", err);
+    }
+  };
 
   return (
     <Card>
@@ -279,7 +300,13 @@ function RegisterForm({ isPending, onSubmit, error, onLoginClick }: RegisterForm
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form 
+            onSubmit={(e) => {
+              console.log("Register form submitted");
+              form.handleSubmit(handleFormSubmit)(e);
+            }} 
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="username"
