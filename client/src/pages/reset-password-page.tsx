@@ -254,7 +254,7 @@ export default function ResetPasswordPage() {
           <Button 
             variant="ghost" 
             className="mt-4"
-            onClick={() => navigate("/auth")}
+            onClick={() => setLocation("/auth")}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Login

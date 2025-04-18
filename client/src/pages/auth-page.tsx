@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { z } from "zod";
 import { loginUserSchema, registerUserSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -228,14 +228,22 @@ function LoginForm({ isPending, onSubmit, error, onRegisterClick }: LoginFormPro
               )}
             />
             
-            <div className="flex items-center space-x-2">
-              <Checkbox id="remember" />
-              <label
-                htmlFor="remember"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="remember" />
+                <label
+                  htmlFor="remember"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Remember me
+                </label>
+              </div>
+              <Link 
+                to="/reset-password" 
+                className="text-sm text-primary hover:underline"
               >
-                Remember me
-              </label>
+                Forgot password?
+              </Link>
             </div>
             
             <Button 
