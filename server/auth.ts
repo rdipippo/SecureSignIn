@@ -8,6 +8,7 @@ import { storage } from "./storage";
 import { User as SelectUser, insertUserSchema, loginUserSchema, registerApiSchema } from "@shared/schema";
 import { ZodError, z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { debug } from "./debug";
 
 declare global {
   namespace Express {
@@ -54,13 +55,28 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        debug('auth', 'Login attempt', { username });
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        
+        if (!user) {
+          debug('auth', 'User not found', { username });
+          return done(null, false, { message: "Invalid username or password" });
+        }
+        
+        const isPasswordValid = await comparePasswords(password, user.password);
+        debug('auth', 'Password validation', { 
+          username, 
+          isValid: isPasswordValid 
+        });
+        
+        if (!isPasswordValid) {
           return done(null, false, { message: "Invalid username or password" });
         } else {
+          debug('auth', 'Login successful', { userId: user.id, username: user.username });
           return done(null, user);
         }
       } catch (error) {
+        debug('auth', 'Login error', { error });
         return done(error);
       }
     }),
@@ -127,12 +143,10 @@ export function setupAuth(app: Express) {
 
   app.post("/api/login", (req, res, next) => {
     try {
-      console.log("Login request received:", req.body);
+      debug('auth', 'Login API request received', { body: req.body });
       
       // Since loginUserSchema includes email field but login only provides username and password,
       // use a simpler schema for validation
-      console.log("Login request body:", req.body);
-      
       const loginRequestSchema = z.object({
         username: z.string().min(3, "Username must be at least 3 characters"),
         password: z.string().min(8, "Password must be at least 8 characters"),
@@ -141,27 +155,39 @@ export function setupAuth(app: Express) {
       const result = loginRequestSchema.safeParse(req.body);
       
       if (!result.success) {
-        console.log("Login validation failed:", result.error);
+        debug('auth', 'Login validation failed', { 
+          error: result.error.format() 
+        });
         const validationError = fromZodError(result.error);
         return res.status(400).json({ 
           message: validationError.message
         });
       }
       
-      console.log("Login validation successful")
+      debug('auth', 'Login validation successful', { username: req.body.username });
       
       passport.authenticate("local", (err: Error, user: SelectUser | false, info: any) => {
         if (err) {
+          debug('auth', 'Authentication error', { error: err });
           return next(err);
         }
         if (!user) {
+          debug('auth', 'Authentication failed', { info });
           return res.status(401).json({ message: info.message || "Authentication failed" });
         }
         
+        debug('auth', 'Authentication successful, proceeding to login', { 
+          userId: user.id,
+          username: user.username 
+        });
+        
         req.login(user, (err) => {
           if (err) {
+            debug('auth', 'Login session error', { error: err });
             return next(err);
           }
+          
+          debug('auth', 'Login session created successfully');
           
           // Filter out password before sending response
           const { password, ...safeUser } = user;
@@ -169,6 +195,7 @@ export function setupAuth(app: Express) {
         });
       })(req, res, next);
     } catch (error) {
+      debug('auth', 'Unexpected login error', { error });
       next(error);
     }
   });
