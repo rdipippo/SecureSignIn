@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { DebugPanel } from "@/components/debug-panel";
 
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
@@ -29,6 +30,8 @@ function App() {
       <AuthProvider>
         <Router />
         <Toaster />
+        {/* Debug panel component - only shows in development */}
+        <DebugPanel />
       </AuthProvider>
     </QueryClientProvider>
   );
