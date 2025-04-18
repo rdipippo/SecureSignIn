@@ -38,8 +38,7 @@ const requestResetSchema = z.object({
 });
 
 export default function ResetPasswordPage() {
-  const [location] = useLocation();
-  const navigate = useNavigate();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [token, setToken] = useState<string>("");
@@ -50,7 +49,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     // If user is logged in, redirect to home page
     if (user) {
-      navigate("/");
+      setLocation("/");
       return;
     }
 
@@ -63,7 +62,7 @@ export default function ResetPasswordPage() {
     } else {
       setShowResetForm(false);
     }
-  }, [user, navigate]);
+  }, [user, setLocation]);
 
   // Form for resetting password
   const resetForm = useForm<z.infer<typeof resetPasswordSchema>>({
@@ -96,7 +95,7 @@ export default function ResetPasswordPage() {
         title: "Password Reset Successful",
         description: "Your password has been reset. You can now log in with your new password.",
       });
-      navigate("/auth");
+      setLocation("/auth");
     },
     onError: (error: Error) => {
       setFormError(error.message);
