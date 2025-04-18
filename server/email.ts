@@ -1,25 +1,13 @@
 import formData from 'form-data';
 import Mailgun from 'mailgun.js';
+import { log } from './vite';
 
-// Initialize Mailgun client
+// Initialize Mailgun
 const mailgun = new Mailgun(formData);
 const mg = mailgun.client({
   username: 'api',
   key: process.env.MAILGUN_API_KEY || '',
 });
-
-// Validate and get mailer configuration from environment variables
-if (!process.env.MAILGUN_API_KEY) {
-  console.warn('MAILGUN_API_KEY is not set. Email sending will not work.');
-}
-
-if (!process.env.MAILGUN_DOMAIN) {
-  console.warn('MAILGUN_DOMAIN is not set. Email sending will not work.');
-}
-
-if (!process.env.MAILGUN_FROM_EMAIL) {
-  console.warn('MAILGUN_FROM_EMAIL is not set. Email sending will not work.');
-}
 
 const domain = process.env.MAILGUN_DOMAIN || '';
 const fromEmail = process.env.MAILGUN_FROM_EMAIL || '';
@@ -38,26 +26,25 @@ export async function sendEmail(
   text: string,
   html?: string
 ): Promise<boolean> {
-  try {
-    // Bail early if configuration is missing
-    if (!process.env.MAILGUN_API_KEY || !domain || !fromEmail) {
-      console.error('Email configuration is incomplete.');
-      return false;
-    }
+  if (!process.env.MAILGUN_API_KEY || !domain || !fromEmail) {
+    log('Mailgun environment variables not set', 'email');
+    return false;
+  }
 
-    // Send email with Mailgun
-    const result = await mg.messages.create(domain, {
+  try {
+    const data = {
       from: fromEmail,
       to: [to],
       subject,
       text,
       html: html || text,
-    });
+    };
 
-    console.log('Email sent:', result.id);
+    const response = await mg.messages.create(domain, data);
+    log(`Email sent successfully: ${response.id}`, 'email');
     return true;
   } catch (error) {
-    console.error('Error sending email:', error);
+    log(`Failed to send email: ${error}`, 'email');
     return false;
   }
 }
@@ -74,26 +61,29 @@ export async function sendPasswordResetEmail(
   resetToken: string,
   resetUrl: string
 ): Promise<boolean> {
-  const resetLink = `${resetUrl}?token=${resetToken}`;
-  
   const subject = 'Password Reset Request';
+  
+  // Create full reset URL with token
+  const fullResetUrl = `${resetUrl}?token=${resetToken}`;
+  
   const text = `
-    Hello,
+    You requested to reset your password.
     
-    You requested to reset your password. Please click on the link below to reset your password:
+    Please click the link below to reset your password:
+    ${fullResetUrl}
     
-    ${resetLink}
-    
-    If you did not request a password reset, please ignore this email and your password will remain unchanged.
+    If you did not request a password reset, please ignore this email.
     
     This link will expire in 1 hour.
   `;
   
   const html = `
-    <p>Hello,</p>
-    <p>You requested to reset your password. Please click on the link below to reset your password:</p>
-    <p><a href="${resetLink}" target="_blank">Reset Password</a></p>
-    <p>If you did not request a password reset, please ignore this email and your password will remain unchanged.</p>
+    <p>You requested to reset your password.</p>
+    <p>Please click the link below to reset your password:</p>
+    <p><a href="${fullResetUrl}">Reset Password</a></p>
+    <p>Or copy and paste this URL into your browser:</p>
+    <p>${fullResetUrl}</p>
+    <p>If you did not request a password reset, please ignore this email.</p>
     <p>This link will expire in 1 hour.</p>
   `;
   
